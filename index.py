@@ -3,7 +3,6 @@ from tkinter import *
 from tkinter import ttk
 from PIL import ImageTk, Image
 
-from ImageRequest import simple_get
 from bs4 import BeautifulSoup
 
 # selenium packages
@@ -34,11 +33,11 @@ def get_html(url):
 
 def get_url(button_id):
     url_dictionary = {
-        1: '',
-        2: '',
-        3: '',
-        4: '',
-        5: ''
+        1: 'https://www.amazon.in/Apple-iPhone-Pro-Max-64GB/dp/B07XVLMZHH/',
+        2: 'https://www.amazon.in/Apple-MacBook-Air-13-3-inch-MQD32HN/dp/B073Q5R6VR/',
+        3: 'https://www.amazon.in/Fender-CD-60CE-Dreadnought-Cutaway-Acoustic-Electric/dp/B001L8NGJW/',
+        4: 'https://www.amazon.in/Nike-AIR-Vapormax-Run-Utility/dp/B07JWBWRG5/',
+        5: 'https://www.amazon.in/Harry-Potter-ChildrenS-Paperback-Boxed/dp/1408856778/'
     }
 
     return url_dictionary.get(button_id, None)
@@ -55,32 +54,6 @@ top_frame.place(relx=0, rely=0, relheight=0.25, relwidth=1)
 # scraped details frame
 bottom_frame = Frame(root)
 bottom_frame.place(relx=0, rely=0.25, relheight=0.75, relwidth=1)
-
-# iphone image button
-iPhoneImage = ImageTk.PhotoImage(Image.open("./assets/iphone-11-pro.jpeg").resize((60, 60)))
-B1 = ttk.Button(top_frame, text="iPhone 11 pro", image=iPhoneImage, compound=TOP)
-B1.place(relx=0, rely=0, relheight=1, relwidth=0.2)
-
-# 2th item button in top frame
-asusVivoBook = ImageTk.PhotoImage(Image.open("./assets/Asus_ViviBook_14.jpg").resize((60, 60)))
-B2 = ttk.Button(top_frame, text="Asus Vivo-Book 14", image=asusVivoBook, compound=TOP)
-B2.place(relx=0.2, rely=0, relheight=1, relwidth=0.2)
-
-# 3rd item button in top frame
-guitar = ImageTk.PhotoImage(Image.open("./assets/guitar.jpg").resize((40, 60)))
-B3 = ttk.Button(top_frame, text="Fender CD-60CE Dreadnought Cutaway Acoustic-Electric Guitar", image=guitar,
-                compound=TOP)
-B3.place(relx=0.4, rely=0, relheight=1, relwidth=0.2)
-
-# 4th item button in top frame
-g = ImageTk.PhotoImage(Image.open("./assets/guitar.jpg").resize((40, 60)))
-B3 = ttk.Button(top_frame, text="Fender CD-60CE Dreadnought Cutaway Acoustic-Electric Guitar", image=g, compound=TOP)
-B3.place(relx=0.6, rely=0, relheight=1, relwidth=0.2)
-
-# 5th item button in top frame
-gt = ImageTk.PhotoImage(Image.open("./assets/guitar.jpg").resize((40, 60)))
-B3 = ttk.Button(top_frame, text="Fender CD-60CE Dreadnought Cutaway Acoustic-Electric Guitar", image=gt, compound=TOP)
-B3.place(relx=0.8, rely=0, relheight=1, relwidth=0.2)
 
 # Canvas to show scraped image of items; positioned in the left of bottom frame
 scrapeCanvas = Canvas(bottom_frame, bg="pink")
@@ -105,13 +78,17 @@ price_tag.set("PRICE : ")
 price_label.place(relx=0.25, rely=0.23)
 
 # description textbox in price_bottom_frame
-price_text = Text(price_bottom_frame, bg='white', fg='black', wrap=WORD)
-price_text.place(relx=0.15, rely=0.5, relwidth=0.75, relheight=0.4)
+feature_scrollbar = Scrollbar(price_bottom_frame, orient="vertical")
+
+feature_listbox = Listbox(price_bottom_frame, yscrollcommand=feature_scrollbar.set)
+feature_scrollbar.config(command=feature_listbox.yview)
+feature_listbox.place(relx=0.15, rely=0.5, relwidth=0.75, relheight=0.4)
+feature_scrollbar.place(relx=0.9, rely=0.5, relheight=0.4)
 
 description_tag = StringVar()
 description_label = Label(price_bottom_frame, textvariable=description_tag, relief=RAISED)
 
-description_tag.set("DESCRIPTION : ")
+description_tag.set("FEATURES : ")
 description_label.place(relx=0.15, rely=0.43)
 
 # reviews listbox in reviews_bottom_frame
@@ -123,12 +100,12 @@ reviews_tag.set("REVIEWS : ")
 reviews_label.place(relx=0.1, rely=0.05)
 
 # vertical scrollbar of reviews list
-scrollbar = Scrollbar(reviews_bottom_frame, orient="vertical")
+review_scrollbar = Scrollbar(reviews_bottom_frame, orient="vertical")
 
-reviews_listbox = Listbox(reviews_bottom_frame, yscrollcommand=scrollbar.set)
-scrollbar.config(command=reviews_listbox.yview)
+reviews_listbox = Listbox(reviews_bottom_frame, yscrollcommand=review_scrollbar.set)
+review_scrollbar.config(command=reviews_listbox.yview)
 reviews_listbox.place(relx=0.1, rely=0.15, relheight=0.7, relwidth=0.8)
-scrollbar.place(relx=0.9, rely=0.15, relheight=0.7)
+review_scrollbar.place(relx=0.9, rely=0.15, relheight=0.7)
 
 
 def handle_button_clicks(button_id):
@@ -136,5 +113,53 @@ def handle_button_clicks(button_id):
 
     html = get_html(url)
 
+    if button_id == 1:
+        price_div = html.select('#priceblock_ourprice')
+        price = price_div[0].get_text()
+        price_text.insert(1.0, price)
+
+        review_outer = html.select('#cm-cr-dp-review-list')
+        review_div = review_outer[0].select('div')[0].select('div')[0].select('div')[0].find_all('div', class_="a-expander-content reviewText review-text-content a-expander-partial-collapse-content")[0].find_all('span')
+        if len(review_div) > 0:
+            review = review_div[0].get_text()
+            reviews_listbox.insert(END, review)
+
+        desc_li_array = html.select('#featurebullets_feature_div')[0].find_all('li')
+        for li in desc_li_array:
+            m_feature = li.find('span').get_text(strip=True)
+            feature_listbox.insert(END, m_feature)
+
+
+
+
+# iphone image button
+iPhoneImage = ImageTk.PhotoImage(Image.open("./assets/iphone-11-pro.jpeg").resize((60, 60)))
+B1 = ttk.Button(top_frame, text="iPhone 11 pro", image=iPhoneImage, compound=TOP,
+                command=lambda: handle_button_clicks(1))
+B1.place(relx=0, rely=0, relheight=1, relwidth=0.2)
+
+# 2th item button in top frame
+MacBook = ImageTk.PhotoImage(Image.open("./assets/Apple_macbook_Air.jpg").resize((60, 60)))
+B2 = ttk.Button(top_frame, text="Apple Macbook Air", image=MacBook, compound=TOP,
+                command=lambda: handle_button_clicks(2))
+B2.place(relx=0.2, rely=0, relheight=1, relwidth=0.2)
+
+# 3rd item button in top frame
+guitar = ImageTk.PhotoImage(Image.open("./assets/guitar.jpg").resize((40, 60)))
+B3 = ttk.Button(top_frame, text="Fender CD-60CE Dreadnought Cutaway Acoustic-Electric Guitar", image=guitar,
+                compound=TOP, command=lambda: handle_button_clicks(3))
+B3.place(relx=0.4, rely=0, relheight=1, relwidth=0.2)
+
+# 4th item button in top frame
+g = ImageTk.PhotoImage(Image.open("./assets/nike_shoes.jpg").resize((40, 60)))
+B4 = ttk.Button(top_frame, text="Nike AIR Vapormax Run Utility Shoes", image=g, compound=TOP,
+                command=lambda: handle_button_clicks(4))
+B4.place(relx=0.6, rely=0, relheight=1, relwidth=0.2)
+
+# 5th item button in top frame
+gt = ImageTk.PhotoImage(Image.open("./assets/harryPotterBooks.jpg").resize((40, 60)))
+B5 = ttk.Button(top_frame, text="Harry Potter Books Collection", image=gt, compound=TOP,
+                command=lambda: handle_button_clicks(5))
+B5.place(relx=0.8, rely=0, relheight=1, relwidth=0.2)
 
 root.mainloop()
